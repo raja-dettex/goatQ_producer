@@ -2,14 +2,17 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/raja-dettex/goatQ_producer/api"
 	"github.com/raja-dettex/goatQ_producer/server"
 )
 
 func main() {
-	serverOpts := api.ServerOpts{ListenAddr: ":4000"}
-	producerOpts := &server.ProducerOpts{Addr: ":3000"}
+	addr := os.Getenv("ADDR")
+	listenAddr := os.Getenv("LISTEN_ADDR")
+	serverOpts := api.ServerOpts{ListenAddr: listenAddr}
+	producerOpts := &server.ProducerOpts{Addr: addr}
 	producer := server.NewGoatQProducer(*producerOpts)
 	go producer.Start()
 	server := api.NewAPIServer(serverOpts, producer)

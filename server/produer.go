@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"io"
 	"net"
 )
 
@@ -26,13 +27,9 @@ func NewGoatQProducer(opts ProducerOpts) *GoatQProducer {
 }
 
 func (producer *GoatQProducer) Start() {
-	conn, err := net.Dial("tcp", producer.opts.Addr)
-	if err != nil {
-		fmt.Println(err)
-	}
 
 	for message := range producer.messageChannel {
-		go producer.publish(message, conn)
+		go producer.publish(message)
 	}
 }
 
@@ -43,17 +40,25 @@ func (producer *GoatQProducer) PutToChannel(message []byte) error {
 	return nil
 }
 
-func (producer *GoatQProducer) publish(msg []byte, conn net.Conn) {
+func (producer *GoatQProducer) publish(msg []byte) {
 	fmt.Println("publisher ", string(msg))
-	_, err := conn.Write([]byte(fmt.Sprintf("WRITE %s", string(msg))))
+	conn, err := net.Dial("tcp", producer.opts.Addr)
+	defer conn.Close()
+	_, err = conn.Write([]byte(fmt.Sprintf("WRITE %s", string(msg))))
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("in publish error", err)
 	}
 	buff := make([]byte, 1024)
 	for {
 		n, err := conn.Read(buff)
+		if err == io.EOF {
+			return
+		}
+		if _, ok := err.(*net.OpError); ok {
+			return
+		}
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("read from storage node", err)
 		}
 		fmt.Println(string(buff[:n]))
 	}

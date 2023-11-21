@@ -30,6 +30,7 @@ func NewAPIServer(opts ServerOpts, producer *server.GoatQProducer) *APIServer {
 
 func (server *APIServer) Start() error {
 	server.RegisterHandlers()
+	fmt.Println("server listening on port : ", server.opts.ListenAddr)
 	return http.ListenAndServe(server.opts.ListenAddr, nil)
 }
 
